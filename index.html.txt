@@ -1,0 +1,572 @@
+<!DOCTYPE html><html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Tiket PELNI (Updated)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* ===== Global fonts and reset ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* "Teks lainnya" -> classic font */
+        body { font-family: 'Times New Roman', Times, serif; background-color: #f0f2f5; }/* "Data yang di-input" -> Source Sans Pro Bold */
+    .data-bold { font-family: 'Source Sans 3', sans-serif; font-weight: 700; }
+
+    .admin-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .header-admin { background: linear-gradient(135deg, #0066cc 0%, #004999 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header-admin h1 { font-size: 28px; margin-bottom: 10px; }
+    .header-admin p { opacity: 0.95; }
+
+    .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .panel-section { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .panel-section h2 { color: #0066cc; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e0e0e0; font-size: 20px; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; font-size: 14px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; transition: border-color 0.3s; font-family: Arial, sans-serif; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+    .btn-container { display: flex; gap: 15px; margin-top: 30px; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background: #0066cc; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-warning { background: #ffc107; color: #333; }
+
+    .preview-section { grid-column: 1 / -1; background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    #ticketPreview { border: 2px dashed #ccc; padding: 20px; border-radius: 10px; background: #fafafa; }
+
+    /* ===== Styles untuk tiket preview (printed document) ===== */
+    .container { max-width: 800px; margin: 0 auto; background-color: white; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .header { margin-bottom: 30px; }
+    .header p { font-size: 14px; margin-bottom: 5px; color: #000; }
+
+    .booking-section { display: flex; justify-content: space-between; align-items: center; margin: 30px 0; padding: 20px 0; }
+    .qr-code { width: 100px; height: 100px; border: 2px solid #000; display: flex; align-items: center; justify-content: center; background-color: white; }
+    .qr-code img { width: 90%; height: 90%; object-fit: contain; }
+
+    .booking-code { text-align: center; flex: 1; }
+    .booking-code-label { font-size: 16px; margin-bottom: 5px; }
+    .booking-code .code { font-size: 26px; letter-spacing: 2px; }
+
+    .pelni-logo { width: 150px; display: flex; justify-content: flex-end; }
+    .pelni-logo img { height: 60px; object-fit: contain; }
+
+    .info-section { display: flex; justify-content: space-between; margin: 30px 0; }
+    .pemesanan, .jadwal { flex: 1; }
+    .jadwal { margin-left: 80px; }
+
+    .section-title { margin-bottom: 15px; font-size: 15px; font-weight: normal; color: #000; }
+    .info-row { display: flex; margin-bottom: 10px; font-size: 13px; }
+    .info-label { width: 200px; font-weight: normal; color: #000; }
+    .info-value { font-weight: bold; flex: 1; color: #000; }
+
+    .passenger-table { width: 100%; border-collapse: collapse; margin: 30px 0; font-size: 12px; }
+    .passenger-table th, .passenger-table td { border: 1px solid #000; padding: 8px 5px; text-align: center; color: #000; }
+    .passenger-table th { background-color: #fff; font-weight: bold; line-height: 1.3; }
+    .passenger-table td:nth-child(2), .passenger-table td:nth-child(3) { text-align: left; padding-left: 8px; }
+    .total-row { background-color: #fff; font-weight: bold; }
+
+    .terms-section { margin-top: 30px; }
+    .terms-section h3 { font-size: 15px; margin-bottom: 15px; font-weight: bold; color: #000; }
+    .terms-section ol { margin-left: 20px; }
+    .terms-section li { margin-bottom: 12px; font-size: 12px; line-height: 1.6; color: #000; }
+
+    .loading-spinner { display: none; text-align: center; padding: 20px; }
+    .loading-spinner.show { display: block; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #0066cc; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* footer for printed doc metadata */
+    .printed-meta { margin-top: 18px; font-size: 12px; color: #333; }
+    .muted { color: #666; font-size: 11px; }
+
+    /* ensure values are readable even when printed */
+    @media print {
+        body { background: #fff; }
+        .admin-container, .main-content, .panel-section, .preview-section, .btn-container { display: none !important; }
+        #ticketPreview, #ticketPreview * { visibility: visible; }
+    }
+</style>
+
+</head>
+<body>
+    <div class="admin-container">
+        <div class="header-admin">
+            <h1>🎫 Admin Panel - Tiket pelni </h1>
+            <p>Kelola dan generate tiket pembayaran PELNI</p>
+        </div><div class="main-content">
+        <!-- Informasi Booking -->
+        <div class="panel-section">
+            <h2>📋 Informasi Booking</h2>
+            <div class="form-group">
+                <label>Kode Booking</label>
+                <input type="text" id="bookingCode" value="C2KLR3" placeholder="Masukkan kode booking">
+            </div>
+            <div class="form-group">
+                <label>Sumber Pembelian</label>
+                <input type="text" id="source" value="WW1, WEB PELNI LIVE" placeholder="Sumber pembelian">
+            </div>
+            <div class="form-group">
+                <label>Nomor Telepon Pemesan</label>
+                <input type="text" id="phone" value="0831-7246-3213" placeholder="08xx-xxxx-xxxx">
+            </div>
+            <div class="form-group">
+                <label>Nama Petugas</label>
+                <input type="text" id="officer" value="Berliana Candra." placeholder="Nama petugas">
+            </div>
+        </div>
+
+        <!-- Informasi Kapal -->
+        <div class="panel-section">
+            <h2>🚢 Informasi Kapal</h2>
+            <div class="form-group">
+                <label>Nama Kapal</label>
+                <input type="text" id="shipName" value="KM.KELUD" placeholder="KM.xxxxx">
+            </div>
+            <div class="form-group">
+                <label>Kelas</label>
+                <select id="class">
+                    <option value="EKO">EKO</option>
+                    <option value="EKONOMI">EKONOMI</option>
+                    <option value="KELAS 1">KELAS 1</option>
+                    <option value="KELAS 2">KELAS 2</option>
+                    <option value="VIP">VIP</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tanggal Berangkat</label>
+                    <input type="datetime-local" id="departDate" value="2025-10-22T16:00">
+                </div>
+                <div class="form-group">
+                    <label>Tanggal Tiba</label>
+                    <input type="datetime-local" id="arriveDate" value="2025-10-23T22:00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Voyage</label>
+                <input type="text" id="voyage" value="LANGSUNG" placeholder="LANGSUNG/TRANSIT">
+            </div>
+            <div class="form-group">
+                <label>Embarkasi (Keberangkatan)</label>
+                <input type="text" id="embarkasi" value="PULAU BATAM" placeholder="Pelabuhan keberangkatan">
+            </div>
+            <div class="form-group">
+                <label>Debarkasi (Tujuan)</label>
+                <input type="text" id="debarkasi" value="TANJUNG PRIOK" placeholder="Pelabuhan tujuan">
+            </div>
+        </div>
+
+        <!-- Data Penumpang -->
+        <div class="panel-section">
+            <h2>👤 Data Penumpang</h2>
+            <div class="form-group">
+                <label>Nama Penumpang</label>
+                <input type="text" id="passengerName" value="RENI JAYANTI" placeholder="Nama lengkap">
+            </div>
+            <div class="form-group">
+                <label>Nomor ID (KTP/Passport)</label>
+                <input type="text" id="passengerId" value="3276044601910001" placeholder="Nomor identitas">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Jenis Kelamin</label>
+                    <select id="gender">
+                        <option value="WANITA">WANITA</option>
+                        <option value="PRIA">PRIA</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Umur</label>
+                    <input type="number" id="age" value="34" placeholder="Umur">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <select id="category">
+                        <option value="DEWASA">DEWASA</option>
+                        <option value="ANAK">ANAK</option>
+                        <option value="BAYI">BAYI</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Deck</label>
+                    <input type="number" id="deck" value="4" placeholder="Nomor deck">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nomor Kabin</label>
+                <input type="text" id="cabin" value="4012-B" placeholder="Nomor kabin">
+            </div>
+            <div class="form-group">
+                <label>Harga Tiket (Rp)</label>
+                <input type="number" id="price" value="392000" placeholder="Harga tiket">
+            </div>
+        </div>
+
+        <!-- Upload Gambar -->
+        <div class="panel-section">
+            <h2>🖼️ Upload QR Code</h2>
+            <div class="form-group">
+                <label>QR Code</label>
+                <div class="file-upload" onclick="document.getElementById('qrUpload').click()">
+                    <div class="upload-icon">📷</div>
+                    <p>Klik untuk upload QR Code</p>
+                    <input type="file" id="qrUpload" accept="image/*">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Logo PELNI (Optional)</label>
+                <input type="text" id="pelniLogo" value="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/PELNI_2023.svg/666px-PELNI_2023.svg.png" placeholder="URL logo PELNI">
+            </div>
+            <!-- Logo BUMN dihilangkan sesuai permintaan -->
+        </div>
+
+        <!-- Syarat & Ketentuan -->
+        <div class="panel-section full-width">
+            <h2>📜 Syarat & Ketentuan</h2>
+            <div class="form-group">
+                <label>Poin 1 - Penukaran Tiket</label>
+                <textarea id="term1">Bukti pembayaran ini tidak berlaku sebagai tiket untuk/naik ke atas kapal dan wajib ditukar menjadi tiket/boarding pass selambat-lambatnya 3 (tiga) jam sebelum keberangkatan kapal.</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 2 - Pengantar</label>
+                <textarea id="term2intro">Selama Masa Transisi Endemi Covid-19, Calon Penumpang wajib memperhatikan hal-hal sebagai berikut :</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 2a - Vaksinasi</label>
+                <textarea id="term2a">Penumpang yang belum vaksin diperbolehkan membeli tiket dan berlayar, namun dianjurkan tetap melakukan vaksinasi COVID-19 sampai dengan booster kedua atau dosis keempat terutama bagi masyarakat yang memiliki risiko tinggi penularan COVID-19 (status vaksin di aplikasi penjualan tiket akan ditampilkan);</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 2b - Masker</label>
+                <textarea id="term2b">Diperbolehkan tidak menggunakan masker apabila dalam keadaan sehat dan tidak berisiko tertular atau menularkan COVID-19 dan dianjurkan tetap menggunakan masker yang tertutup dengan baik apabila dalam keadaan tidak sehat atau berisiko COVID-19, sebelum dan saat melakukan perjalanan, dan beraktifitas di sarana dan prasarana transportasi laut;</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 2c - Hand Sanitizer</label>
+                <textarea id="term2c">Dianjurkan tetap membawa hand sanitizer dan/ atau menggunakan sabun dan air mengalir untuk mencuci tangan secara berkala terutama jika telah bersentuhan dengan benda-benda yang digunakan secara bersamaan;</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 2d - Jaga Jarak</label>
+                <textarea id="term2d">Bagi Penumpang yang berada dalam keadaan tidak sehat dan berisiko tertular atau menularkan COVID-19, dianjurkan menjaga jarak atau menghindari kerumunan orang untuk mencegah terjadinya penularan COVID-19; dan</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 2e - Aplikasi SATUSEHAT</label>
+                <textarea id="term2e">Dianjurkan tetap menggunakan aplikasi SATUSEHAT untuk memonitor kesehatan pribadi.</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Poin 3 - Penukaran di Loket</label>
+                <textarea id="term3">Bukti pembelian ini dapat ditukar menjadi tiket di loket cabang PT. PELNI (Persero), atau</textarea>
+            </div>
+        </div>
+
+        <!-- Preview & Actions -->
+        <div class="preview-section">
+            <h2>👁️ Preview Tiket & Download</h2>
+            <div class="btn-container">
+                <button class="btn btn-primary" onclick="updatePreview()">🔄 Update Preview</button>
+                <button class="btn btn-success" onclick="generateTicket()">✅ Generate Tiket</button>
+                <button class="btn btn-warning" onclick="downloadPDF()">📥 Download PDF</button>
+            </div>
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner"></div>
+                <p>Menggenerate PDF...</p>
+            </div>
+            <div id="ticketPreview" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let qrCodeData = '';
+
+    document.getElementById('qrUpload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                qrCodeData = event.target.result;
+                alert('✅ QR Code berhasil diupload!');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function formatCurrency(amount) {
+        return 'Rp ' + parseInt(amount || 0).toLocaleString('id-ID');
+    }
+
+    function formatDateTime(datetime) {
+        if (!datetime) return '-';
+        const date = new Date(datetime);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+
+    // gunakan waktu Jakarta Pusat untuk tanggal cetak
+    function getJakartaPrintTime() {
+        const now = new Date();
+        // toLocaleString dengan zone Asia/Jakarta => format: "dd/mm/yyyy, hh:MM:SS"
+        const local = now.toLocaleString('en-GB', { timeZone: 'Asia/Jakarta' });
+        const parts = local.split(',');
+        const datePart = (parts[0] || '').trim();
+        const timePart = (parts[1] || '').trim();
+        const [day, month, year] = datePart.split('/');
+        const [hour, minute] = timePart.split(':');
+        return `${day}-${month}-${year}|${hour}.${minute}`;
+    }
+
+    function updatePreview() {
+        const bookingCode = document.getElementById('bookingCode').value;
+        const source = document.getElementById('source').value;
+        const phone = document.getElementById('phone').value;
+        const officer = document.getElementById('officer').value;
+        const shipName = document.getElementById('shipName').value;
+        const classType = document.getElementById('class').value;
+        const departDate = document.getElementById('departDate').value;
+        const arriveDate = document.getElementById('arriveDate').value;
+        const voyage = document.getElementById('voyage').value;
+        const embarkasi = document.getElementById('embarkasi').value;
+        const debarkasi = document.getElementById('debarkasi').value;
+        const passengerName = document.getElementById('passengerName').value;
+        const passengerId = document.getElementById('passengerId').value;
+        const gender = document.getElementById('gender').value;
+        const age = document.getElementById('age').value;
+        const category = document.getElementById('category').value;
+        const deck = document.getElementById('deck').value;
+        const cabin = document.getElementById('cabin').value;
+        const price = document.getElementById('price').value;
+        const pelniLogo = document.getElementById('pelniLogo').value;
+
+        const term1 = document.getElementById('term1').value;
+        const term2intro = document.getElementById('term2intro').value;
+        const term2a = document.getElementById('term2a').value;
+        const term2b = document.getElementById('term2b').value;
+        const term2c = document.getElementById('term2c').value;
+        const term2d = document.getElementById('term2d').value;
+        const term2e = document.getElementById('term2e').value;
+        const term3 = document.getElementById('term3').value;
+
+        const printTime = getJakartaPrintTime();
+
+        const ticketHTML = `
+            <div class="container">
+                <div class="header">
+                    <p>Pembelian dilakukan dari : <strong class="data-bold">${escapeHtml(source)}</strong></p>
+                    <p>Bukti Pembayaran ini harus sesuai dengan kartu identitas (KTP, Passport, atau kartu identitas lainnya)</p>
+                </div>
+
+                <div class="booking-section">
+                    <div class="qr-code">
+                        ${qrCodeData ? `<img src="${qrCodeData}" alt="QR Code">` : '<div style="text-align:center; color:#999;">QR Code</div>'}
+                    </div>
+
+                    <div class="booking-code">
+                        <div class="booking-code-label">KODE BOOKING :</div>
+                        <div class="code data-bold">${escapeHtml(bookingCode)}</div>
+                    </div>
+
+                    <div class="pelni-logo">
+                        <img src="${escapeHtml(pelniLogo)}" alt="PELNI Logo" onerror="this.alt='PELNI'">
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="pemesanan">
+                        <div class="section-title">Pemesanan</div>
+                        <div class="info-row">
+                            <span class="info-label">Nomor Telepon Pemesan</span>
+                            <span class="info-value data-bold">${escapeHtml(phone)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Waktu Cetak (WIB - Jakarta)</span>
+                            <span class="info-value data-bold">${printTime}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Nama Petugas</span>
+                            <span class="info-value data-bold">${escapeHtml(officer)}</span>
+                        </div>
+                    </div>
+
+                    <div class="jadwal">
+                        <div class="section-title">Jadwal Keberangkatan</div>
+                        <div class="info-row">
+                            <span class="info-label">Kapal</span>
+                            <span class="info-value data-bold">${escapeHtml(shipName)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Kelas</span>
+                            <span class="info-value data-bold">${escapeHtml(classType)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tgl/Jam Keberangkatan</span>
+                            <span class="info-value data-bold">${formatDateTime(departDate)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tgl/Jam Tiba</span>
+                            <span class="info-value data-bold">${formatDateTime(arriveDate)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Voyage</span>
+                            <span class="info-value data-bold">${escapeHtml(voyage)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Embarkasi</span>
+                            <span class="info-value data-bold">${escapeHtml(embarkasi)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Debarkasi</span>
+                            <span class="info-value data-bold">${escapeHtml(debarkasi)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="passenger-table">
+                    <thead>
+                        <tr>
+                            <th>Pax</th>
+                            <th>Nama</th>
+                            <th>Nomor ID</th>
+                            <th>Jenis<br>Kelamin</th>
+                            <th>Kategori</th>
+                            <th>Umur</th>
+                            <th>Deck</th>
+                            <th>Nomor<br>Kabin</th>
+                            <th>Harga<br>Tiket</th>
+                            <th>Total<br>Harga</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td class="data-bold">${escapeHtml(passengerName)}</td>
+                            <td class="data-bold">${escapeHtml(passengerId)}</td>
+                            <td class="data-bold">${escapeHtml(gender)}</td>
+                            <td class="data-bold">${escapeHtml(category)}</td>
+                            <td class="data-bold">${escapeHtml(age)}</td>
+                            <td class="data-bold">${escapeHtml(deck)}</td>
+                            <td class="data-bold">${escapeHtml(cabin)}</td>
+                            <td class="data-bold">${formatCurrency(price)}</td>
+                            <td class="data-bold">${formatCurrency(price)}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="9">TOTAL</td>
+                            <td class="data-bold">${formatCurrency(price)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="terms-section">
+                    <h3>Syarat & Ketentuan</h3>
+                    <ol>
+                        <li>${escapeHtml(term1)}</li>
+                        <li>${escapeHtml(term2intro)}
+                            <ol>
+                                <li>${escapeHtml(term2a)}</li>
+                                <li>${escapeHtml(term2b)}</li>
+                                <li>${escapeHtml(term2c)}</li>
+                                <li>${escapeHtml(term2d)}</li>
+                                <li>${escapeHtml(term2e)}</li>
+                            </ol>
+                        </li>
+                        <li>${escapeHtml(term3)}</li>
+                    </ol>
+                </div>
+
+                <div class="printed-meta muted">
+                    Dokumen ini dicetak oleh <span class="data-bold">Admin Panel</span> — <span class="data-bold">Kode: ${escapeHtml(bookingCode)}</span> — Waktu cetak (WIB): <span class="data-bold">${printTime}</span>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('ticketPreview').innerHTML = ticketHTML;
+    }
+
+    function generateTicket() {
+        updatePreview();
+        alert('✅ Tiket berhasil digenerate! Lihat preview di bawah.');
+    }
+
+    async function downloadPDF() {
+        const bookingCode = document.getElementById('bookingCode').value || 'UNKNOWN';
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        try {
+            loadingSpinner.classList.add('show');
+
+            const ticketElement = document.getElementById('ticketPreview');
+
+            if (!ticketElement.querySelector('.container')) {
+                alert('⚠️ Silakan klik "Generate Tiket" terlebih dahulu!');
+                loadingSpinner.classList.remove('show');
+                return;
+            }
+
+            const canvas = await html2canvas(ticketElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            const imgWidth = 210;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= 297;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= 297;
+            }
+
+            pdf.save(`Tiket_PELNI_${bookingCode}.pdf`);
+            alert('✅ PDF berhasil didownload!');
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Gagal menggenerate PDF. Silakan coba lagi.');
+        } finally {
+            loadingSpinner.classList.remove('show');
+        }
+    }
+
+    // small helper to avoid simple XSS when injecting values
+    function escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    window.onload = function() { updatePreview(); };
+</script>
+<footer style="text-align:center;padding:15px 0;background:#f8f8f8;font-family:Times,serif;">
+    &copy; 2025 create by oscar offc. All rights reserved.
+</footer>
+
+</body>
+</html>
